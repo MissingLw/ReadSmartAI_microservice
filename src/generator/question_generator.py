@@ -1,0 +1,70 @@
+"""
+Question_generator.py creates a list of reading comprehension question/answer pairs for a given text file
+"""
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+from flask import Blueprint, request
+
+question_generator = Blueprint('question_generator', __name__)
+
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY_READSMART")
+client = OpenAI(api_key=api_key)
+
+def read_text_from_file(file_path):
+    """
+    Reads a text file and returns its content as a string.
+    """
+    with open(file_path, 'r', encoding='utf-8') as scode:
+        text = scode.read().replace('\n', '')
+    return text
+
+
+def generate_qa_pairs(text, num_questions):
+    """
+    Generates reading comprehension questions and answers for a given text.
+    """
+
+    prompt = f"{text}\n\nGenerate {num_questions} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt},
+        ]
+    )
+    qa_pairs = []
+    for choice in response.choices:
+        message = choice.message
+        print(f"Processing message with role {message.role} and content\n {message.content}")  # Debug
+        if message.role == 'system':
+            continue
+        elif message.role == 'assistant':
+            qa = message.content.split('\n')  # Split the message into separate lines
+            for i, line in enumerate(qa):  # Iterate over every line
+                if line.startswith('Question'):  # Check if the line is a question
+                    print("question recognized")  # debug
+                    question = line.split(': ', 1)[1]  # Split on ': ' and take the second part as the question
+                elif line.startswith('Answer:'):  # Check if the line is an answer
+                    answer = line.split('Answer:', 1)[1]  # Split on 'Answer:' and take the second part as the answer
+                    qa_pairs.append((question.strip(), answer.strip()))  # Append the question and answer, removing any leading/trailing whitespace
+                    print(f"TEST PAIR;  {qa_pairs}\n")
+    print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
+    return qa_pairs, response
+
+
+@question_generator.route('/generate', methods=['POST'])
+def generate():
+    data = request.get_json()
+    textSource = data['text-source']
+    numQuestions = data['question-count']
+
+    # Read the text from the file specified by textSource
+    text = read_text_from_file(f'generator/{textSource}.txt')
+
+    # Generate the specified number of questions
+    qa_pairs, _ = generate_qa_pairs(text, numQuestions)
+
+    return {'qa_pairs': qa_pairs}
