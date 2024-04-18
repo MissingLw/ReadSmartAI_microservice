@@ -1,4 +1,4 @@
-flask==2.0.3
-werkzeug==2.0.1
-python-dotenv==0.19.1
-openai==0.27.0
+flask==2.2.2
+werkzeug==2.2.2
+python-dotenv==1.0.1
+openai==1.21.2
