@@ -1,0 +1,1 @@
+web: python ReadSmart_Microservice.py
