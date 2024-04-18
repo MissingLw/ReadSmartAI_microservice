@@ -1,4 +1,5 @@
 # ReadSmart_Microservice.py
+import os
 from flask import Flask
 from generator.question_generator import question_generator
 from grader.response_grader import response_grader
@@ -17,5 +18,7 @@ def home():
 def favicon():
     return ""
 
+
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
