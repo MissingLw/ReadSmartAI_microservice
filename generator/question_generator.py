@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from flask import Blueprint, request
+from docx import Document
+import PyPDF2
 
 question_generator = Blueprint('question_generator', __name__)
 
@@ -13,12 +15,41 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY_READSMART")
 client = OpenAI(api_key=api_key)
 
-def read_text_from_file(file_path):
+
+def read_text_from_txt_file(file_path):
     """
     Reads a text file and returns its content as a string.
     """
     with open(file_path, 'r', encoding='utf-8') as scode:
         text = scode.read().replace('\n', '')
+    return text
+
+
+def read_text_from_docx_file(file_path):
+    """
+    Reads a .docx file and returns its content as a string.
+    """
+    doc = Document(file_path)
+    full_text = ' '.join(paragraph.text for paragraph in doc.paragraphs)
+    return full_text
+
+
+def read_text_from_pdf_file(file_path, start_page, end_page):
+    """
+    Reads a PDF file and returns the content from the start page to the end page as a string.
+    """
+    pdf_file_obj = open(file_path, 'rb')
+    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
+
+    # Ensure end_page does not exceed the number of pages in the PDF
+    end_page = min(end_page, pdf_reader.numPages)
+
+    text = ''
+    for page_num in range(start_page-1, end_page+1):  # Python uses 0-based indexing
+        page_obj = pdf_reader.getPage(page_num)
+        text += page_obj.extractText()
+
+    pdf_file_obj.close()
     return text
 
 
@@ -62,7 +93,7 @@ def generate():
     numQuestions = data['question-count']
 
     # Read the text from the file specified by textSource
-    text = read_text_from_file(f'generator/{textSource}.txt')
+    text = read_text_from_txt_file(f'generator/{textSource}.txt')
 
     # Generate the specified number of questions
     qa_pairs, _ = generate_qa_pairs(text, numQuestions)
