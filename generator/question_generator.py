@@ -119,7 +119,7 @@ def generate_qa_pairs(text, num_questions):
 def generate():
     data = request.get_json()
     textSource = data['text-source']
-    numQuestions = data['question-count']
+    numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
 
     # Read the text from the file specified by textSource
     text = read_text_from_txt_file(f'generator/{textSource}.txt')
