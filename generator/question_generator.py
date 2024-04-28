@@ -60,6 +60,7 @@ def generate_qa_pairs(text, num_questions):
     """
     Generates reading comprehension questions and answers for a given text.
     """
+    print("starting num questions", num_questions)  # Debug
 
     # Get the tokenizer for the "gpt-4" model
     enc = tiktoken.encoding_for_model("gpt-4")
@@ -69,6 +70,8 @@ def generate_qa_pairs(text, num_questions):
 
     # Calculate the number of questions per chunk
     num_questions_per_chunk = math.ceil(num_questions / len(text_chunks))
+    
+    print("num questions per chunk", num_questions_per_chunk)  # Debug
 
     qa_pairs = []
 
