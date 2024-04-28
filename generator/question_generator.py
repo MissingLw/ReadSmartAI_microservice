@@ -7,9 +7,6 @@ from openai import OpenAI
 from flask import Blueprint, request
 from docx import Document
 import PyPDF2
-import time
-import tiktoken
-import math
 
 question_generator = Blueprint('question_generator', __name__)
 
@@ -61,40 +58,14 @@ def generate_qa_pairs(text, num_questions):
     Generates reading comprehension questions and answers for a given text.
     """
 
-    # Get the tokenizer for the "gpt-4" model
-    enc = tiktoken.encoding_for_model("gpt-4")
-
-    # Split the text into chunks of 5000 tokens
-    text_chunks = [text[i:i+5000] for i in range(0, len(text), 5000)]
-
-    # Calculate the number of questions per chunk
-    num_questions_per_chunk = math.ceil(num_questions / len(text_chunks))
-
-    qa_pairs = []
-
-    for text_chunk in text_chunks:
-        # Count the number of tokens in the text chunk and prompt
-        text_tokens = len(enc.encode(text_chunk))
-        prompt_tokens = len(enc.encode(f"Generate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"))
-
-        total_tokens = text_tokens + prompt_tokens
-
-        # If the total number of tokens exceeds 5000, wait for one minute
-        if total_tokens > 5000:
-            time.sleep(60)
-
-        # Generate the prompt
-        prompt = f"{text_chunk}\n\nGenerate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
-
-        # Make the API request
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ]
-        )
-
+    prompt = f"{text}\n\nGenerate {num_questions} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
+    response = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt},
+        ]
+    )
     qa_pairs = []
     for choice in response.choices:
         message = choice.message
