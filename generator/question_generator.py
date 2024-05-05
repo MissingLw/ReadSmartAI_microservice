@@ -100,7 +100,7 @@ def generate_qa_pairs(text, num_questions):
 
         for choice in response.choices:
             message = choice.message
-            print(f"Processing message with role {message.role} and content\n {message.content}")  # Debug
+            # print(f"Processing message with role {message.role} and content\n {message.content}")  # Debug
             if message.role == 'system':
                 continue
             elif message.role == 'assistant':
@@ -112,9 +112,9 @@ def generate_qa_pairs(text, num_questions):
                     elif line.startswith('Answer:'):  # Check if the line is an answer
                         answer = line.split('Answer:', 1)[1]  # Split on 'Answer:' and take the second part as the answer
                         qa_pairs.append((question.strip(), answer.strip()))  # Append the question and answer, removing any leading/trailing whitespace
-                        print(f"TEST PAIR;  {qa_pairs}\n")
-        print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
-
+                        # print(f"TEST PAIR;  {qa_pairs}\n")
+        # print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
+    print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
     return qa_pairs, response
 
 
