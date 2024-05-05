@@ -10,6 +10,7 @@ import PyPDF2
 import time
 import tiktoken
 import math
+import random
 
 question_generator = Blueprint('question_generator', __name__)
 
@@ -75,45 +76,79 @@ def generate_qa_pairs(text, num_questions):
 
     qa_pairs = []
 
-    for text_chunk in text_chunks:
-        # Count the number of tokens in the text chunk and prompt
-        text_tokens = len(enc.encode(text_chunk))
-        prompt_tokens = len(enc.encode(f"Generate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"))
+    if num_questions < len(text_chunks):
+        # Divide the chunks into thirds
+        third = len(text_chunks) // 3
+        chunks_thirds = [text_chunks[i:i+third] for i in range(0, len(text_chunks), third)]
 
-        total_tokens = text_tokens + prompt_tokens
+        # Generate one question from each third
+        for i in range(num_questions):
+            text_chunk = random.choice(chunks_thirds[i % 3])  # Select a random chunk from the current third
 
-        # If the total number of tokens exceeds 5000, wait for one minute
-        if total_tokens > 5000:
-            time.sleep(60)
+            # Generate the prompt
+            prompt = f"{text_chunk}\n\nGenerate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
 
-        # Generate the prompt
-        prompt = f"{text_chunk}\n\nGenerate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
+            # Make the API request
+            response = OpenAI().chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                ]
+            )
 
-        # Make the API request
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ]
-        )
+            for choice in response.choices:
+                message = choice.message
+                if message.role == 'system':
+                    continue
+                elif message.role == 'assistant':
+                    qa = message.content.split('\n')  # Split the message into separate lines
+                    for line in qa:  # Iterate over every line
+                        if line.startswith('Question'):  # Check if the line is a question
+                            question = line.split(': ', 1)[1]  # Split on ': ' and take the second part as the question
+                        elif line.startswith('Answer:'):  # Check if the line is an answer
+                            answer = line.split('Answer:', 1)[1]  # Split on 'Answer:' and take the second part as the answer
+                            qa_pairs.append((question.strip(), answer.strip()))  # Append the question and answer, removing any leading/trailing whitespace
+    else:
+        for text_chunk in text_chunks:
+            # Count the number of tokens in the text chunk and prompt
+            text_tokens = len(enc.encode(text_chunk))
+            prompt_tokens = len(enc.encode(f"Generate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"))
 
-        for choice in response.choices:
-            message = choice.message
-            # print(f"Processing message with role {message.role} and content\n {message.content}")  # Debug
-            if message.role == 'system':
-                continue
-            elif message.role == 'assistant':
-                qa = message.content.split('\n')  # Split the message into separate lines
-                for i, line in enumerate(qa):  # Iterate over every line
-                    if line.startswith('Question'):  # Check if the line is a question
-                        print("question recognized")  # debug
-                        question = line.split(': ', 1)[1]  # Split on ': ' and take the second part as the question
-                    elif line.startswith('Answer:'):  # Check if the line is an answer
-                        answer = line.split('Answer:', 1)[1]  # Split on 'Answer:' and take the second part as the answer
-                        qa_pairs.append((question.strip(), answer.strip()))  # Append the question and answer, removing any leading/trailing whitespace
-                        # print(f"TEST PAIR;  {qa_pairs}\n")
-        # print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
+            total_tokens = text_tokens + prompt_tokens
+
+            # If the total number of tokens exceeds 5000, wait for one minute
+            if total_tokens > 5000:
+                time.sleep(60)
+
+            # Generate the prompt
+            prompt = f"{text_chunk}\n\nGenerate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
+
+            # Make the API request
+            response = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                ]
+            )
+
+            for choice in response.choices:
+                message = choice.message
+                # print(f"Processing message with role {message.role} and content\n {message.content}")  # Debug
+                if message.role == 'system':
+                    continue
+                elif message.role == 'assistant':
+                    qa = message.content.split('\n')  # Split the message into separate lines
+                    for i, line in enumerate(qa):  # Iterate over every line
+                        if line.startswith('Question'):  # Check if the line is a question
+                            print("question recognized")  # debug
+                            question = line.split(': ', 1)[1]  # Split on ': ' and take the second part as the question
+                        elif line.startswith('Answer:'):  # Check if the line is an answer
+                            answer = line.split('Answer:', 1)[1]  # Split on 'Answer:' and take the second part as the answer
+                            qa_pairs.append((question.strip(), answer.strip()))  # Append the question and answer, removing any leading/trailing whitespace
+                            # print(f"TEST PAIR;  {qa_pairs}\n")
+            # print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
     print(f"\n\n\n\n\nTHIS IS QA PAIRS;  {qa_pairs}\n")
     return qa_pairs, response
 
