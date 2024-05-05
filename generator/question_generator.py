@@ -21,12 +21,12 @@ api_key = os.getenv("OPENAI_API_KEY_READSMART")
 client = OpenAI(api_key=api_key)
 
 
-def download_blob(blob_service_client, container_name, folder_name, blob_name, download_path):
+def download_blob(blob_service_client, container_name, teacher_id, text_source, download_path):
     """
     Downloads a blob to a file.
     """
-    # Append the folder name to the blob name
-    blob_name = f'{folder_name}/{blob_name}'
+    # Append the teacher_id and text_source to form the blob name
+    blob_name = f'{teacher_id}/{text_source}'
 
     blob_client = blob_service_client.get_blob_client(container_name, blob_name)
     with open(download_path, "wb") as download_file:
@@ -190,6 +190,7 @@ def generate():
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     
     print("before download") # Debug
+    print(f"teacherId: {teacherId}, textSource: {textSource}")  # Debug
 
     # Download the file from the blob specified by textSource
     download_path = f'generator/{textSource}'
