@@ -181,15 +181,21 @@ def generate():
     teacherId = data['teacher-id']
     numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
 
+    print("before connection string")  # Debug
+
     # Get the Azure Storage connection string from the environment variable
     connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 
     # Create a BlobServiceClient
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    
+    print("before download") # Debug
 
     # Download the file from the blob specified by textSource
     download_path = f'generator/{textSource}'
     download_blob(blob_service_client, 'readsmart-fstorage', teacherId, textSource, download_path)
+    
+    print("before file type")  # Debug
 
     # Determine the file type and read the text accordingly
     _, file_extension = os.path.splitext(download_path)
