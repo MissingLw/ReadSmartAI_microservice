@@ -84,12 +84,20 @@ def generate_qa_pairs(text, num_questions):
         # Generate one question from each third
         for i in range(num_questions):
             text_chunk = random.choice(chunks_thirds[i % 3])  # Select a random chunk from the current third
+            text_tokens = len(enc.encode(text_chunk))
+            prompt_tokens = len(enc.encode(f"Generate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"))
+
+            total_tokens = text_tokens + prompt_tokens
+
+            # If the total number of tokens exceeds 5000, wait for one minute
+            if total_tokens > 5000:
+                time.sleep(60)
 
             # Generate the prompt
             prompt = f"{text_chunk}\n\nGenerate {num_questions_per_chunk} reading comprehension questions and their answers focusing on core ideas/themes. Please format them as follows:\nQuestion Number: Question\nAnswer: Answer\n\nFor example:\nQuestion 1: What is the color of the sky?\nAnswer: The sky is blue.\n\n"
 
             # Make the API request
-            response = OpenAI().chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
