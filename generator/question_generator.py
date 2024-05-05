@@ -11,6 +11,7 @@ import time
 import tiktoken
 import math
 import random
+from azure.storage.blob import BlobServiceClient
 
 question_generator = Blueprint('question_generator', __name__)
 
@@ -19,6 +20,18 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY_READSMART")
 client = OpenAI(api_key=api_key)
 
+
+def download_blob(blob_service_client, container_name, folder_name, blob_name, download_path):
+    """
+    Downloads a blob to a file.
+    """
+    # Append the folder name to the blob name
+    blob_name = f'{folder_name}/{blob_name}'
+
+    blob_client = blob_service_client.get_blob_client(container_name, blob_name)
+    with open(download_path, "wb") as download_file:
+        download_data = blob_client.download_blob().readall()
+        download_file.write(download_data)
 
 def read_text_from_txt_file(file_path):
     """
@@ -165,10 +178,29 @@ def generate_qa_pairs(text, num_questions):
 def generate():
     data = request.get_json()
     textSource = data['text-source']
+    teacherId = data['teacher-id']
     numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
 
-    # Read the text from the file specified by textSource
-    text = read_text_from_txt_file(f'generator/{textSource}.txt')
+    # Get the Azure Storage connection string from the environment variable
+    connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+
+    # Create a BlobServiceClient
+    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+
+    # Download the file from the blob specified by textSource
+    download_path = f'generator/{textSource}'
+    download_blob(blob_service_client, 'readsmart-fstorage', teacherId, textSource, download_path)
+
+    # Determine the file type and read the text accordingly
+    _, file_extension = os.path.splitext(download_path)
+    if file_extension == '.txt':
+        text = read_text_from_txt_file(download_path)
+    elif file_extension == '.pdf':
+        text = read_text_from_pdf_file(download_path)
+    elif file_extension in ['.doc', '.docx']:
+        text = read_text_from_docx_file(download_path)
+    else:
+        return {'error': 'Unsupported file type'}
 
     # Generate the specified number of questions
     qa_pairs, _ = generate_qa_pairs(text, numQuestions)
