@@ -180,6 +180,8 @@ def generate():
     textSource = data['text-source']
     teacherId = data['teacher-id']
     numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
+    start_page = int(data['start-page'])  # Convert start_page to an integer
+    end_page = int(data['end-page'])
 
     print("before connection string")  # Debug
 
@@ -203,7 +205,7 @@ def generate():
     if file_extension == '.txt':
         text = read_text_from_txt_file(download_path)
     elif file_extension == '.pdf':
-        text = read_text_from_pdf_file(download_path)
+        text = read_text_from_pdf_file(download_path, start_page, end_page)
     elif file_extension in ['.doc', '.docx']:
         text = read_text_from_docx_file(download_path)
     else:
