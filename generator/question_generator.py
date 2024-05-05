@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from flask import Blueprint, request
 from docx import Document
-import PyPDF2
+from PyPDF2 import PdfReader
 import time
 import tiktoken
 import math
@@ -55,18 +55,16 @@ def read_text_from_pdf_file(file_path, start_page, end_page):
     """
     Reads a PDF file and returns the content from the start page to the end page as a string.
     """
-    pdf_file_obj = open(file_path, 'rb')
-    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
+    pdf_reader = PdfReader(file_path)
 
     # Ensure end_page does not exceed the number of pages in the PDF
-    end_page = min(end_page, pdf_reader.numPages)
+    end_page = min(end_page, len(pdf_reader.pages))
 
     text = ''
-    for page_num in range(start_page-1, end_page+1):  # Python uses 0-based indexing
-        page_obj = pdf_reader.getPage(page_num)
-        text += page_obj.extractText()
+    for page_num in range(start_page-1, end_page):  # Python uses 0-based indexing
+        page_obj = pdf_reader.pages[page_num]
+        text += page_obj.extract_text()
 
-    pdf_file_obj.close()
     return text
 
 
