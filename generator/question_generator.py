@@ -180,34 +180,39 @@ def generate():
     numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
     start_page = int(data['start-page'])  # Convert start_page to an integer
     end_page = int(data['end-page'])
+    use_raw_text = data.get('use-raw-text', False)  # Get the use-raw-text value, default to False if not provided
 
-    print("before connection string")  # Debug
 
-    # Get the Azure Storage connection string from the environment variable
-    connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-
-    # Create a BlobServiceClient
-    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-    
-    print("before download") # Debug
-    print(f"teacherId: {teacherId}, textSource: {textSource}")  # Debug
-
-    # Download the file from the blob specified by textSource
-    download_path = f'generator/{textSource}'
-    download_blob(blob_service_client, 'readsmart-fstorage', teacherId, textSource, download_path)
-    
-    print("before file type")  # Debug
-
-    # Determine the file type and read the text accordingly
-    _, file_extension = os.path.splitext(download_path)
-    if file_extension == '.txt':
-        text = read_text_from_txt_file(download_path)
-    elif file_extension == '.pdf':
-        text = read_text_from_pdf_file(download_path, start_page, end_page)
-    elif file_extension in ['.doc', '.docx']:
-        text = read_text_from_docx_file(download_path)
+    if use_raw_text:
+        text = textSource
     else:
-        return {'error': 'Unsupported file type'}
+        print("before connection string")  # Debug
+        
+        # Get the Azure Storage connection string from the environment variable
+        connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+
+        # Create a BlobServiceClient
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        
+        print("before download") # Debug
+        print(f"teacherId: {teacherId}, textSource: {textSource}")  # Debug
+
+        # Download the file from the blob specified by textSource
+        download_path = f'generator/{textSource}'
+        download_blob(blob_service_client, 'readsmart-fstorage', teacherId, textSource, download_path)
+        
+        print("before file type")  # Debug
+
+        # Determine the file type and read the text accordingly
+        _, file_extension = os.path.splitext(download_path)
+        if file_extension == '.txt':
+            text = read_text_from_txt_file(download_path)
+        elif file_extension == '.pdf':
+            text = read_text_from_pdf_file(download_path, start_page, end_page)
+        elif file_extension in ['.doc', '.docx']:
+            text = read_text_from_docx_file(download_path)
+        else:
+            return {'error': 'Unsupported file type'}
 
     # Generate the specified number of questions
     qa_pairs, _ = generate_qa_pairs(text, numQuestions)
