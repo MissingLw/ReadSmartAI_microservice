@@ -175,7 +175,6 @@ def generate_qa_pairs(text, num_questions):
 @question_generator.route('/generate', methods=['POST'])
 def generate():
     data = request.get_json()
-    textSource = data['text-source']
     teacherId = data['teacher-id']
     numQuestions = int(data['question-count'])  # Convert numQuestions to an integer
     start_page = int(data['start-page'])  # Convert start_page to an integer
@@ -186,6 +185,7 @@ def generate():
     if use_raw_text:
         text = textSource
     else:
+        textSource = data['text-source']
         print("before connection string")  # Debug
         
         # Get the Azure Storage connection string from the environment variable
