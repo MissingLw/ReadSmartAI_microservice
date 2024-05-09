@@ -183,7 +183,7 @@ def generate():
 
 
     if use_raw_text:
-        text = textSource
+        text = data['raw-text']
     else:
         textSource = data['text-source']
         print("before connection string")  # Debug
@@ -213,6 +213,7 @@ def generate():
             text = read_text_from_docx_file(download_path)
         else:
             return {'error': 'Unsupported file type'}
+        
 
     # Generate the specified number of questions
     qa_pairs, _ = generate_qa_pairs(text, numQuestions)
